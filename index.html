@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dynamic Excel Data</title>
+    <title>Dynamic Editable Table</title>
     <style>
         table {
             width: 100%;
@@ -20,17 +20,20 @@
             box-sizing: border-box;
         }
         button {
-            padding: 10px 15px;
+            padding: 5px 10px;
             cursor: pointer;
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 4px;
         }
+        .edit-btn {
+            background-color: #ffa500;
+        }
     </style>
 </head>
 <body>
-    <h1>Excel Data with Dynamic Input</h1>
+    <h1>Editable Dynamic Table</h1>
     <table id="data-table">
         <thead>
             <tr>
@@ -40,17 +43,18 @@
                 <th>Number</th>
                 <th>Result</th>
                 <th>Sum</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            <!-- Example data row -->
             <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td>24.5</td>
+                <td>10.75</td>
+                <td>230</td>
+                <td>1</td>
+                <td>28807.5</td>
+                <td>374497.5</td>
+                <td><button class="edit-btn">Edit</button></td>
             </tr>
         </tbody>
         <tfoot>
@@ -60,6 +64,7 @@
                 <td><input type="number" id="price-input" placeholder="Price"></td>
                 <td><input type="number" id="number-input" placeholder="Number"></td>
                 <td><button id="submit-btn">Submit</button></td>
+                <td></td>
                 <td></td>
             </tr>
         </tfoot>
@@ -73,23 +78,22 @@
         const numberInput = document.getElementById("number-input");
         const submitBtn = document.getElementById("submit-btn");
 
+        function calculateResult(coin, player, price, number) {
+            return ((((coin * 0.95) - player) * price) * number) * 10;
+        }
+
         submitBtn.addEventListener("click", () => {
             const coin = parseFloat(coinInput.value) || 0;
             const player = parseFloat(playerInput.value) || 0;
             const price = parseFloat(priceInput.value) || 0;
             const number = parseFloat(numberInput.value) || 0;
 
-            // Calculate the Result and new Sum
-            const result = ((((coin * 0.95) - player) * price) * number) * 10;
+            const result = calculateResult(coin, player, price, number);
 
-            // Find the last sum value in the table
             const lastRow = dataTable.lastElementChild;
-            const lastSumCell = lastRow ? lastRow.lastElementChild : null;
-            const previousSum = lastSumCell ? parseFloat(lastSumCell.textContent) || 0 : 0;
+            const lastSum = lastRow ? parseFloat(lastRow.cells[5].textContent) || 0 : 0;
+            const sum = result + lastSum;
 
-            const sum = result + previousSum;
-
-            // Create a new row
             const newRow = document.createElement("tr");
             newRow.innerHTML = `
                 <td>${coin}</td>
@@ -98,17 +102,49 @@
                 <td>${number}</td>
                 <td>${result.toFixed(2)}</td>
                 <td>${sum.toFixed(2)}</td>
+                <td><button class="edit-btn">Edit</button></td>
             `;
 
-            // Append the new row to the table
             dataTable.appendChild(newRow);
-
-            // Clear input fields
             coinInput.value = "";
             playerInput.value = "";
             priceInput.value = "";
             numberInput.value = "";
+            attachEditListener(newRow);
         });
+
+        function attachEditListener(row) {
+            const editBtn = row.querySelector(".edit-btn");
+            editBtn.addEventListener("click", () => {
+                if (editBtn.textContent === "Edit") {
+                    const cells = Array.from(row.cells).slice(0, 4);
+                    cells.forEach((cell, index) => {
+                        const value = cell.textContent;
+                        cell.innerHTML = `<input type="number" value="${value}" />`;
+                    });
+                    editBtn.textContent = "Save";
+                } else {
+                    const inputs = Array.from(row.querySelectorAll("input"));
+                    const [coin, player, price, number] = inputs.map(input => parseFloat(input.value) || 0);
+                    const result = calculateResult(coin, player, price, number);
+
+                    const lastRow = Array.from(dataTable.children).slice(-2, -1)[0];
+                    const previousSum = lastRow ? parseFloat(lastRow.cells[5].textContent) || 0 : 0;
+                    const sum = result + previousSum;
+
+                    inputs.forEach((input, index) => {
+                        row.cells[index].textContent = input.value;
+                    });
+
+                    row.cells[4].textContent = result.toFixed(2);
+                    row.cells[5].textContent = sum.toFixed(2);
+                    editBtn.textContent = "Edit";
+                }
+            });
+        }
+
+        // Attach edit functionality to initial rows
+        document.querySelectorAll(".edit-btn").forEach(attachEditListener);
     </script>
 </body>
 </html>
